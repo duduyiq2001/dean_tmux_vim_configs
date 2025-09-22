@@ -35,7 +35,8 @@
 - **\nt** → show/hide file tree
 
 ### Search Files
-- **\ff** → search in all files
+- **\ff** → fuzzy find files by name
+- **\fb** → fuzzy search text inside files
 
 ### Split Screen
 - **:vs** → split vertical

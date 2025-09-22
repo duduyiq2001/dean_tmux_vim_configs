@@ -7,20 +7,20 @@ backup() { local f="$1"; [[ -f "$f" ]] && cp -a "$f" "${f}.bak.$(date +%Y%m%d-%H
 ###############################################################################
 # 1) Install prerequisites (tmux, ripgrep, vim, curl, git)
 ###############################################################################
-banner "Installing packages (tmux, ripgrep, vim, curl, git)..."
+banner "Installing packages (tmux, ripgrep, vim, curl, git, fzf)..."
 if command -v apt >/dev/null 2>&1; then
   sudo apt update
-  sudo apt install -y tmux ripgrep vim curl git
+  sudo apt install -y tmux ripgrep vim curl git fzf
 elif command -v dnf >/dev/null 2>&1; then
-  sudo dnf install -y tmux ripgrep vim curl git
+  sudo dnf install -y tmux ripgrep vim curl git fzf
 elif command -v pacman >/dev/null 2>&1; then
-  sudo pacman -Sy --noconfirm tmux ripgrep vim curl git
+  sudo pacman -Sy --noconfirm tmux ripgrep vim curl git fzf
 elif command -v zypper >/dev/null 2>&1; then
-  sudo zypper install -y tmux ripgrep vim curl git
+  sudo zypper install -y tmux ripgrep vim curl git fzf
 elif command -v brew >/dev/null 2>&1; then
-  brew install tmux ripgrep vim git
+  brew install tmux ripgrep vim git fzf
 else
-  echo "Could not detect a supported package manager. Please install tmux, ripgrep, vim, curl, and git manually."
+  echo "Could not detect a supported package manager. Please install tmux, ripgrep, vim, curl, git, and fzf manually."
 fi
 
 ###############################################################################
@@ -112,6 +112,8 @@ cat > "$VIMRC" <<'VIMRC'
 call plug#begin('~/.vim/plugged')
 Plug 'preservim/nerdtree'
 Plug 'ctrlpvim/ctrlp.vim'
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
 call plug#end()
 
 " --- Sensible basics ---
@@ -140,6 +142,9 @@ nnoremap <silent> \nt :NERDTreeToggle<CR>
 
 " \ff: fuzzy file finder popup
 nnoremap <silent> \ff :CtrlP<CR>
+
+" \fb: fuzzy text search in files (browse)
+nnoremap <silent> \fb :Rg<CR>
 
 " :vs already exists; add :hs for horizontal split
 command! -nargs=? -complete=file Hs split <args>
