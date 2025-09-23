@@ -114,6 +114,7 @@ Plug 'preservim/nerdtree'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 call plug#end()
 
 " --- Sensible basics ---
@@ -121,8 +122,21 @@ set number
 set relativenumber
 set hidden
 set ignorecase smartcase
-set termguicolors
 set mouse=a
+
+" --- Color scheme settings ---
+set background=dark
+if &term =~ '256color'
+    set t_Co=256
+endif
+
+" Use default vim colors - no fancy themes
+colorscheme default
+
+" --- Terminal settings ---
+" Enable alternate screen buffer (restore screen on exit)
+set t_ti=\e[?1049h
+set t_te=\e[?1049l
 
 " --- File search backend (prefer ripgrep) ---
 if executable('rg')
@@ -152,6 +166,59 @@ command! -nargs=? -complete=file Hs split <args>
 " Quickfix nav (optional)
 nnoremap <silent> ]q :cnext<CR>
 nnoremap <silent> [q :cprevious<CR>
+
+set clipboard=unnamedplus
+
+" --- CoC.nvim settings ---
+" Use tab for trigger completion with characters ahead and navigate
+inoremap <silent><expr> <TAB>
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ CheckBackspace() ? "\<Tab>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+
+" Make <CR> to accept selected completion item or notify coc.nvim to format
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+
+function! CheckBackspace() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <c-space> to trigger completion
+inoremap <silent><expr> <c-space> coc#refresh()
+
+" GoTo code navigation
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+
+" Use K to show documentation in preview window
+nnoremap <silent> K :call ShowDocumentation()<CR>
+
+function! ShowDocumentation()
+  if CocAction('hasProvider', 'hover')
+    call CocActionAsync('doHover')
+  else
+    call feedkeys('K', 'in')
+  endif
+endfunction
+
+" \fm: format current buffer
+nmap <silent> \fm <Plug>(coc-format)
+" \fs: format selected range (visual mode)
+xmap <silent> \fs <Plug>(coc-format-selected)
+
+" --- CoC settings - MINIMAL highlighting ---
+" Disable CoC visual pollution
+let g:coc_default_semantic_highlight_groups = 0
+autocmd VimEnter * call coc#config('semanticTokens.enable', v:false)
+autocmd VimEnter * call coc#config('codeLens.enable', v:false)
+autocmd VimEnter * call coc#config('inlayHint.enable', v:false)
+autocmd VimEnter * call coc#config('documentHighlight.enable', v:false)
+autocmd VimEnter * call coc#config('colors.enable', v:false)
 VIMRC
 
 # Neovim mirrors ~/.vimrc if Neovim is present
@@ -178,9 +245,22 @@ elif command -v vim >/dev/null 2>&1; then
 fi
 
 ###############################################################################
-# 6) Done
+# 6) Install CoC language servers
+###############################################################################
+banner "Installing CoC language servers..."
+# Wait a moment for CoC to initialize, then install common language servers
+sleep 2
+if command -v nvim >/dev/null 2>&1; then
+  nvim --headless +"CocInstall -sync coc-prettier coc-pyright coc-java coc-tsserver coc-json coc-css coc-html" +qall || true
+elif command -v vim >/dev/null 2>&1; then
+  vim +"CocInstall -sync coc-prettier coc-pyright coc-java coc-tsserver coc-json coc-css coc-html" +qall || true
+fi
+
+###############################################################################
+# 7) Done
 ###############################################################################
 banner "All set! Next steps:"
 echo " - Start a new shell (or run: source ~/.zshrc) to auto-attach tmux."
 echo " - Inside tmux, reload config anytime with: Ctrl-a then r"
-echo " - In Vim: /nt toggles NERDTree, /ff searches files, :hs splits horizontally."
+echo " - In Vim: \\nt toggles NERDTree, \\ff searches files, \\fm formats code."
+echo " - CoC LSP features: gd (go to definition), gr (references), K (docs)."
