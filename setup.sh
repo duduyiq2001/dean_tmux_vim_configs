@@ -40,6 +40,16 @@ if [[ $- == *i* ]] && command -v tmux >/dev/null 2>&1 && [[ -z "$TMUX" ]]; then
   tmux new -A -s main
 fi
 # <<< tmux autostart (added by setup_tmux_vim.sh) <<<
+
+# Disable shared history across tmux sessions
+setopt no_share_history
+setopt append_history
+setopt inc_append_history
+
+# Separate history per tmux window
+if [[ -n "$TMUX" ]]; then
+    export HISTFILE="$HOME/.zsh_history_tmux_$(tmux display-message -p '#S_#W')"
+fi
 ZRC
 fi
 
@@ -60,7 +70,7 @@ set -g set-clipboard external
 set -ga terminal-overrides ',*:Ms=\\E]52;c;%p2%s\\7'
 set -g base-index 1
 setw -g pane-base-index 1
-set -g history-limit 100000
+set -g history-limit 1000000
 setw -g mode-keys vi
 set -g status-keys vi
 set -s escape-time 0
@@ -245,7 +255,28 @@ elif command -v vim >/dev/null 2>&1; then
 fi
 
 ###############################################################################
-# 6) Install CoC language servers
+# 6) Create Claude Code wrapper script
+###############################################################################
+banner "Creating Claude Code wrapper for tmux isolation..."
+cat > "${HOME}/claude-wrapper.sh" <<'WRAPPER'
+#!/bin/bash
+# Run Claude Code with proper terminal isolation in tmux
+# This prevents output from bleeding into other panes
+
+if [[ -n "${TMUX:-}" ]]; then
+    # In tmux: disable alternate screen and force normal terminal behavior
+    export TERM=screen-256color
+    tput rmcup 2>/dev/null || true
+    exec claude "$@"
+else
+    # Outside tmux: run normally
+    exec claude "$@"
+fi
+WRAPPER
+chmod +x "${HOME}/claude-wrapper.sh"
+
+###############################################################################
+# 7) Install CoC language servers
 ###############################################################################
 banner "Installing CoC language servers..."
 # Wait a moment for CoC to initialize, then install common language servers
@@ -257,10 +288,11 @@ elif command -v vim >/dev/null 2>&1; then
 fi
 
 ###############################################################################
-# 7) Done
+# 8) Done
 ###############################################################################
 banner "All set! Next steps:"
 echo " - Start a new shell (or run: source ~/.zshrc) to auto-attach tmux."
 echo " - Inside tmux, reload config anytime with: Ctrl-a then r"
 echo " - In Vim: \\nt toggles NERDTree, \\ff searches files, \\fm formats code."
 echo " - CoC LSP features: gd (go to definition), gr (references), K (docs)."
+echo " - Claude Code wrapper created at ~/claude-wrapper.sh (prevents output bleeding in tmux)"
