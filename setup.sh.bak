@@ -48,7 +48,7 @@ setopt inc_append_history
 
 # Separate history per tmux PANE (not just window)
 if [[ -n "$TMUX_PANE" ]]; then
-    export HISTFILE="$HOME/.zsh_history_tmux_${TMUX_PANE:1}"
+    export HISTFILE="$HOME/.zsh_history_tmux_$(tmux display-message -p '#S_#W')"
 fi
 ZRC
 fi
@@ -125,7 +125,6 @@ Plug 'ctrlpvim/ctrlp.vim'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-Plug 'brooth/far.vim'
 call plug#end()
 
 " --- Sensible basics ---
@@ -170,12 +169,6 @@ nnoremap <silent> \ff :CtrlP<CR>
 
 " \fb: fuzzy text search in files (browse)
 nnoremap <silent> \fb :Rg<CR>
-
-" \fr: find and replace across files (far.vim)
-nnoremap \fr :Far
-
-" Configure far.vim to use ripgrep
-let g:far#source = 'rg'
 
 " :vs already exists; add :hs for horizontal split
 command! -nargs=? -complete=file Hs split <args>
@@ -300,6 +293,6 @@ fi
 banner "All set! Next steps:"
 echo " - Start a new shell (or run: source ~/.zshrc) to auto-attach tmux."
 echo " - Inside tmux, reload config anytime with: Ctrl-a then r"
-echo " - In Vim: \\nt toggles NERDTree, \\ff searches files, \\fb text search, \\fr find/replace, \\fm formats code."
+echo " - In Vim: \\nt toggles NERDTree, \\ff searches files, \\fm formats code."
 echo " - CoC LSP features: gd (go to definition), gr (references), K (docs)."
 echo " - Claude Code wrapper created at ~/claude-wrapper.sh (prevents output bleeding in tmux)"
