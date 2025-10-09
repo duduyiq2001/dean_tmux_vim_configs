@@ -173,9 +173,18 @@ nnoremap <silent> \fb :Rg<CR>
 
 " \fr: find and replace across files (far.vim)
 nnoremap \fr :Far
+" \fi: find and replace case insensitive
+nnoremap \fi :Far -i
 
 " Configure far.vim to use ripgrep
 let g:far#source = 'rg'
+
+" In FAR buffer: press R (shift+r) to execute all replacements
+autocmd FileType far nnoremap <buffer> R :Fardo<CR>
+" In FAR buffer: press U (shift+u) to undo replacements
+autocmd FileType far nnoremap <buffer> U :Farundo<CR>
+
+" Simple workflow: use 'x' to exclude items you DON'T want to replace, then 'R' to replace included ones
 
 " :vs already exists; add :hs for horizontal split
 command! -nargs=? -complete=file Hs split <args>
