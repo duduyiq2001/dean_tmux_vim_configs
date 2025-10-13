@@ -165,10 +165,21 @@ endif
 " \nt: toggle NERDTree
 nnoremap <silent> \nt :NERDTreeToggle<CR>
 
+" NERDTree settings
+let NERDTreeShowHidden=1
+let NERDTreeIgnore=['^\.git$[[dir]]', '^\.claude$[[dir]]']
+
 " \ff: fuzzy file finder popup
 nnoremap <silent> \ff :CtrlP<CR>
 
-" \fb: fuzzy text search in files (browse)
+" \fb: fuzzy text search in files (browse) - includes .github/, .gitignore, .env but excludes .git/, .claude/
+command! -bang -nargs=* Rg
+  \ call fzf#vim#grep(
+  \   'rg --column --line-number --no-heading --color=always --smart-case --hidden -g "!.git/" -g "!.claude/" '.shellescape(<q-args>), 1,
+  \   <bang>0 ? fzf#vim#with_preview('up:60%')
+  \           : fzf#vim#with_preview('right:50%:hidden', '?'),
+  \   <bang>0)
+
 nnoremap <silent> \fb :Rg<CR>
 
 " \fr: find and replace across files (far.vim)
