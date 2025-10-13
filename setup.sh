@@ -65,7 +65,7 @@ unbind C-b
 set -g prefix C-a
 bind C-a send-prefix
 
-set -g mouse off
+set -g mouse on
 set -g set-clipboard external
 set -ga terminal-overrides ',*:Ms=\\E]52;c;%p2%s\\7'
 set -g base-index 1
