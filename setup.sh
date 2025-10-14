@@ -102,6 +102,7 @@ bind c new-window -c "#{pane_current_path}"
 bind q display-panes
 bind x kill-pane
 bind r source-file ~/.tmux.conf \; display-message "tmux.conf reloaded"
+bind m set -g mouse \; display-message "Mouse: #{?mouse,ON,OFF}"
 TMUXCONF
 
 ###############################################################################
