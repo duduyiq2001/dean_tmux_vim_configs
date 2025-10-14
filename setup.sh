@@ -73,6 +73,9 @@ setw -g pane-base-index 1
 set -g history-limit 1000000
 setw -g mode-keys vi
 set -g status-keys vi
+
+# Allow normal mouse selection in copy mode
+bind-key -T copy-mode MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "pbcopy"
 set -s escape-time 0
 set -g default-terminal "tmux-256color"
 set -ga terminal-overrides ",xterm-256color:RGB"
@@ -177,8 +180,7 @@ nnoremap <silent> \ff :CtrlP<CR>
 command! -bang -nargs=* Rg
   \ call fzf#vim#grep(
   \   'rg --column --line-number --no-heading --color=always --smart-case --hidden -g "!.git/" -g "!.claude/" '.shellescape(<q-args>), 1,
-  \   <bang>0 ? fzf#vim#with_preview('up:60%')
-  \           : fzf#vim#with_preview('right:50%:hidden', '?'),
+  \   fzf#vim#with_preview('right:50%', '?'),
   \   <bang>0)
 
 nnoremap <silent> \fb :Rg<CR>
