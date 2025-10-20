@@ -139,6 +139,9 @@ set hidden
 set ignorecase smartcase
 set mouse=a
 
+" Treat .cup files as Java for LSP/syntax
+autocmd BufNewFile,BufRead *.cup setfiletype java
+
 " --- Color scheme settings ---
 set background=dark
 if &term =~ '256color'
@@ -318,7 +321,57 @@ elif command -v vim >/dev/null 2>&1; then
 fi
 
 ###############################################################################
-# 8) Done
+# 8) Create open_project command
+###############################################################################
+banner "Creating open_project command..."
+cat > "${HOME}/open_project.sh" <<'OPENPROJ'
+#!/usr/bin/env bash
+# open_project [directory] - Create tmux window with vim on top, 2 shells on bottom
+
+set -e
+
+# Get directory argument or use current directory
+PROJECT_DIR="${1:-.}"
+PROJECT_DIR=$(cd "$PROJECT_DIR" && pwd)  # Get absolute path
+PROJECT_NAME=$(basename "$PROJECT_DIR")
+
+if [[ ! -d "$PROJECT_DIR" ]]; then
+    echo "Error: Directory '$PROJECT_DIR' does not exist"
+    exit 1
+fi
+
+# Check if we're in tmux
+if [[ -z "$TMUX" ]]; then
+    echo "Error: Must be run inside a tmux session"
+    exit 1
+fi
+
+# Create new window
+tmux new-window -n "$PROJECT_NAME" -c "$PROJECT_DIR"
+
+# Start vim in the first pane
+tmux send-keys -t "$PROJECT_NAME" "vim" C-m
+
+# Split horizontally to create bottom section (vim on top, shell on bottom)
+tmux split-window -v -c "$PROJECT_DIR" -t "$PROJECT_NAME"
+
+# Split the bottom pane vertically to create two side-by-side shells
+tmux split-window -h -c "$PROJECT_DIR" -t "$PROJECT_NAME"
+
+# Select the vim pane (top)
+tmux select-pane -t "$PROJECT_NAME.0"
+
+echo "Project window '$PROJECT_NAME' created with layout: vim (top) + 2 shells (bottom)"
+OPENPROJ
+chmod +x "${HOME}/open_project.sh"
+
+# Add alias to zshrc if not already present
+if ! grep -qF "alias open_project=" "${ZSHRC}" 2>/dev/null; then
+  echo 'alias open_project="~/open_project.sh"' >> "${ZSHRC}"
+fi
+
+###############################################################################
+# 9) Done
 ###############################################################################
 banner "All set! Next steps:"
 echo " - Start a new shell (or run: source ~/.zshrc) to auto-attach tmux."
@@ -326,3 +379,4 @@ echo " - Inside tmux, reload config anytime with: Ctrl-a then r"
 echo " - In Vim: \\nt toggles NERDTree, \\ff searches files, \\fb text search, \\fr find/replace, \\fm formats code."
 echo " - CoC LSP features: gd (go to definition), gr (references), K (docs)."
 echo " - Claude Code wrapper created at ~/claude-wrapper.sh (prevents output bleeding in tmux)"
+echo " - Use 'open_project [dir]' to create a new tmux window with vim + 2 shells"
