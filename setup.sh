@@ -287,12 +287,18 @@ function! FormatRuby()
   call setpos('.', l:save_cursor)
 endfunction
 
+" Smart format function - uses rubocop for Ruby, CoC for others
+function! SmartFormat()
+  if &filetype == 'ruby'
+    call FormatRuby()
+  else
+    call CocAction('format')
+  endif
+endfunction
+
 " \fm: format current buffer
-" For Ruby files, use rubocop directly; for others, use CoC
-autocmd FileType ruby nmap <buffer> <silent> \fm :call FormatRuby()<CR>
-autocmd FileType ruby xmap <buffer> <silent> \fs :call FormatRuby()<CR>
-nmap <silent> \fm <Plug>(coc-format)
-xmap <silent> \fs <Plug>(coc-format-selected)
+nmap <silent> \fm :call SmartFormat()<CR>
+xmap <silent> \fs :call SmartFormat()<CR>
 
 " --- CoC settings - MINIMAL highlighting ---
 " Disable CoC visual pollution
@@ -368,58 +374,13 @@ mkdir -p "${HOME}/.config/coc"
 cat > "${HOME}/.config/coc/coc-settings.json" <<'COCSETTINGS'
 {
   "solargraph.diagnostics": true,
-  "solargraph.formatting": true,
+  "solargraph.completion": true,
+  "solargraph.hover": true,
+  "solargraph.definitions": true,
+  "solargraph.references": true,
+  "solargraph.formatting": false,
   "solargraph.useBundler": false,
-  "diagnostic-languageserver.filetypes": {
-    "ruby": "rubocop"
-  },
-  "diagnostic-languageserver.formatFiletypes": {
-    "ruby": "rubocop"
-  },
-  "diagnostic-languageserver.formatters": {
-    "rubocop": {
-      "command": "rubocop",
-      "args": ["-x", "--stderr", "--force-exclusion", "--stdin", "%filepath"],
-      "rootPatterns": [".git", "Gemfile"]
-    }
-  },
-  "diagnostic-languageserver.linters": {
-    "rubocop": {
-      "command": "rubocop",
-      "args": ["-f", "json", "--force-exclusion", "--stdin", "%filepath"],
-      "rootPatterns": [".git", "Gemfile"],
-      "sourceName": "rubocop",
-      "parseJson": {
-        "errorsRoot": "files[0].offenses",
-        "line": "location.line",
-        "column": "location.column",
-        "message": "[${cop_name}] ${message}",
-        "security": "severity"
-      },
-      "securities": {
-        "fatal": "error",
-        "error": "error",
-        "warning": "warning",
-        "convention": "info",
-        "refactor": "info",
-        "info": "info"
-      }
-    }
-  },
-  "languageserver": {
-    "ruby": {
-      "command": "solargraph",
-      "args": ["stdio"],
-      "filetypes": ["ruby"],
-      "rootPatterns": [".git", "Gemfile"],
-      "settings": {
-        "solargraph": {
-          "diagnostics": true,
-          "formatting": true
-        }
-      }
-    }
-  }
+  "solargraph.commandPath": "solargraph"
 }
 COCSETTINGS
 
