@@ -50,6 +50,9 @@ setopt inc_append_history
 if [[ -n "$TMUX_PANE" ]]; then
     export HISTFILE="$HOME/.zsh_history_tmux_${TMUX_PANE:1}"
 fi
+
+# Add pipx bin directory to PATH for Python tools
+export PATH="$HOME/.local/bin:$PATH"
 ZRC
 fi
 
@@ -142,6 +145,33 @@ set mouse=a
 " Treat .cup files as Java for LSP/syntax
 autocmd BufNewFile,BufRead *.cup setfiletype java
 
+" d/x/s = delete (black hole, doesn't save)
+" c = cut (saves to register for pasting, no history)
+" y = yank/copy
+nnoremap d "_d
+vnoremap d "_d
+nnoremap x "_x
+vnoremap x "_x
+nnoremap s "_s
+vnoremap s "_s
+nnoremap D "_D
+nnoremap C ""C
+nnoremap c ""c
+vnoremap c ""c
+
+" Visual mode paste: don't let replaced text overwrite register
+vnoremap p "_dP
+
+" f = yank to system clipboard
+vnoremap f "+y
+nnoremap f "+yy
+
+" Clear all numbered registers on startup - NO HISTORY!
+augroup ClearRegisters
+    autocmd!
+    autocmd VimEnter * for i in range(1,9) | execute 'let @'.i.' = ""' | endfor
+augroup END
+
 " --- Color scheme settings ---
 set background=dark
 if &term =~ '256color'
@@ -210,7 +240,8 @@ command! -nargs=? -complete=file Hs split <args>
 nnoremap <silent> ]q :cnext<CR>
 nnoremap <silent> [q :cprevious<CR>
 
-set clipboard=unnamedplus
+" Disable clipboard sync - vim paste is independent from system clipboard
+" set clipboard=unnamedplus
 
 " --- CoC.nvim settings ---
 " Use tab for trigger completion with characters ahead and navigate
@@ -249,9 +280,18 @@ function! ShowDocumentation()
   endif
 endfunction
 
+" Custom Ruby formatter using rubocop
+function! FormatRuby()
+  let l:save_cursor = getpos('.')
+  silent execute '%!rubocop -x --stderr --stdin %'
+  call setpos('.', l:save_cursor)
+endfunction
+
 " \fm: format current buffer
+" For Ruby files, use rubocop directly; for others, use CoC
+autocmd FileType ruby nmap <buffer> <silent> \fm :call FormatRuby()<CR>
+autocmd FileType ruby xmap <buffer> <silent> \fs :call FormatRuby()<CR>
 nmap <silent> \fm <Plug>(coc-format)
-" \fs: format selected range (visual mode)
 xmap <silent> \fs <Plug>(coc-format-selected)
 
 " --- CoC settings - MINIMAL highlighting ---
@@ -315,10 +355,73 @@ banner "Installing CoC language servers..."
 # Wait a moment for CoC to initialize, then install common language servers
 sleep 2
 if command -v nvim >/dev/null 2>&1; then
-  nvim --headless +"CocInstall -sync coc-prettier coc-pyright coc-java coc-tsserver coc-json coc-css coc-html" +qall || true
+  nvim --headless +"CocInstall -sync coc-prettier coc-pyright coc-java coc-tsserver coc-json coc-css coc-html coc-solargraph" +qall || true
 elif command -v vim >/dev/null 2>&1; then
-  vim +"CocInstall -sync coc-prettier coc-pyright coc-java coc-tsserver coc-json coc-css coc-html" +qall || true
+  vim +"CocInstall -sync coc-prettier coc-pyright coc-java coc-tsserver coc-json coc-css coc-html coc-solargraph" +qall || true
 fi
+
+###############################################################################
+# 7.5) Configure CoC settings for Ruby/rubocop
+###############################################################################
+banner "Configuring CoC settings for Ruby formatter..."
+mkdir -p "${HOME}/.config/coc"
+cat > "${HOME}/.config/coc/coc-settings.json" <<'COCSETTINGS'
+{
+  "solargraph.diagnostics": true,
+  "solargraph.formatting": true,
+  "solargraph.useBundler": false,
+  "diagnostic-languageserver.filetypes": {
+    "ruby": "rubocop"
+  },
+  "diagnostic-languageserver.formatFiletypes": {
+    "ruby": "rubocop"
+  },
+  "diagnostic-languageserver.formatters": {
+    "rubocop": {
+      "command": "rubocop",
+      "args": ["-x", "--stderr", "--force-exclusion", "--stdin", "%filepath"],
+      "rootPatterns": [".git", "Gemfile"]
+    }
+  },
+  "diagnostic-languageserver.linters": {
+    "rubocop": {
+      "command": "rubocop",
+      "args": ["-f", "json", "--force-exclusion", "--stdin", "%filepath"],
+      "rootPatterns": [".git", "Gemfile"],
+      "sourceName": "rubocop",
+      "parseJson": {
+        "errorsRoot": "files[0].offenses",
+        "line": "location.line",
+        "column": "location.column",
+        "message": "[${cop_name}] ${message}",
+        "security": "severity"
+      },
+      "securities": {
+        "fatal": "error",
+        "error": "error",
+        "warning": "warning",
+        "convention": "info",
+        "refactor": "info",
+        "info": "info"
+      }
+    }
+  },
+  "languageserver": {
+    "ruby": {
+      "command": "solargraph",
+      "args": ["stdio"],
+      "filetypes": ["ruby"],
+      "rootPatterns": [".git", "Gemfile"],
+      "settings": {
+        "solargraph": {
+          "diagnostics": true,
+          "formatting": true
+        }
+      }
+    }
+  }
+}
+COCSETTINGS
 
 ###############################################################################
 # 8) Create open_project command
@@ -378,5 +481,7 @@ echo " - Start a new shell (or run: source ~/.zshrc) to auto-attach tmux."
 echo " - Inside tmux, reload config anytime with: Ctrl-a then r"
 echo " - In Vim: \\nt toggles NERDTree, \\ff searches files, \\fb text search, \\fr find/replace, \\fm formats code."
 echo " - CoC LSP features: gd (go to definition), gr (references), K (docs)."
+echo " - Ruby formatting with rubocop via \\fm (requires rubocop installed)."
+echo " - Python formatting with autopep8 via \\fm (install with: pipx install autopep8)."
 echo " - Claude Code wrapper created at ~/claude-wrapper.sh (prevents output bleeding in tmux)"
 echo " - Use 'open_project [dir]' to create a new tmux window with vim + 2 shells"
