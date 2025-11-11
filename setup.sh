@@ -133,6 +133,7 @@ Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'brooth/far.vim'
+Plug 'tpope/vim-commentary'
 call plug#end()
 
 " --- Sensible basics ---
@@ -165,6 +166,14 @@ vnoremap p "_dP
 " f = yank to system clipboard
 vnoremap f "+y
 nnoremap f "+yy
+
+" / = comment/uncomment using vim-commentary
+xmap / gc
+nmap / gcc
+
+" \ = explicitly uncomment
+xmap \ gc
+nmap \ gcc
 
 " Clear all numbered registers on startup - NO HISTORY!
 augroup ClearRegisters
@@ -292,7 +301,8 @@ function! SmartFormat()
   if &filetype == 'ruby'
     call FormatRuby()
   else
-    call CocAction('format')
+    " Use the same CoC format that was working before
+    execute 'normal \<Plug>(coc-format)'
   endif
 endfunction
 
