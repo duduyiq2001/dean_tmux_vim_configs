@@ -296,10 +296,19 @@ function! FormatRuby()
   call setpos('.', l:save_cursor)
 endfunction
 
-" Smart format function - uses rubocop for Ruby, CoC for others
+" Custom Rust formatter using rustfmt
+function! FormatRust()
+  let l:save_cursor = getpos('.')
+  silent execute '%!rustfmt --edition 2021 --emit stdout 2>/dev/null'
+  call setpos('.', l:save_cursor)
+endfunction
+
+" Smart format function - uses language-specific formatters, falls back to CoC
 function! SmartFormat()
   if &filetype == 'ruby'
     call FormatRuby()
+  elseif &filetype == 'rust'
+    call FormatRust()
   else
     " Use the same CoC format that was working before
     execute 'normal \<Plug>(coc-format)'
