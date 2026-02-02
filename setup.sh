@@ -167,13 +167,9 @@ vnoremap p "_dP
 vnoremap f "+y
 nnoremap f "+yy
 
-" / = comment/uncomment using vim-commentary
-xmap / gc
-nmap / gcc
-
-" \ = explicitly uncomment
-xmap \ gc
-nmap \ gcc
+" . = comment/uncomment using vim-commentary
+xmap . gc
+nmap . gcc
 
 " Clear all numbered registers on startup - NO HISTORY!
 augroup ClearRegisters
@@ -292,14 +288,26 @@ endfunction
 " Custom Ruby formatter using rubocop
 function! FormatRuby()
   let l:save_cursor = getpos('.')
-  silent execute '%!rubocop -x --stderr --stdin %'
+  silent execute "%!rubocop -a --stdin % 2>&1 | awk 'f; /^====================$/{f=1}'"
   call setpos('.', l:save_cursor)
 endfunction
 
 " Custom Rust formatter using rustfmt
 function! FormatRust()
+  " Save file first, then format in-place (rustfmt needs file context)
+  write
   let l:save_cursor = getpos('.')
-  silent execute '%!rustfmt --edition 2021 --emit stdout 2>/dev/null'
+  silent execute '!rustfmt %'
+  edit!
+  call setpos('.', l:save_cursor)
+endfunction
+
+" Custom Java formatter using google-java-format
+function! FormatJava()
+  write
+  let l:save_cursor = getpos('.')
+  silent execute '!google-java-format -i % 2>/dev/null'
+  edit!
   call setpos('.', l:save_cursor)
 endfunction
 
@@ -309,9 +317,11 @@ function! SmartFormat()
     call FormatRuby()
   elseif &filetype == 'rust'
     call FormatRust()
+  elseif &filetype == 'java'
+    call FormatJava()
   else
-    " Use the same CoC format that was working before
-    execute 'normal \<Plug>(coc-format)'
+    " Use CoC formatting for Python, etc.
+    call CocAction('format')
   endif
 endfunction
 
@@ -399,7 +409,9 @@ cat > "${HOME}/.config/coc/coc-settings.json" <<'COCSETTINGS'
   "solargraph.references": true,
   "solargraph.formatting": false,
   "solargraph.useBundler": false,
-  "solargraph.commandPath": "solargraph"
+  "solargraph.commandPath": "solargraph",
+  "java.format.enabled": true,
+  "java.format.comments.enabled": true
 }
 COCSETTINGS
 
